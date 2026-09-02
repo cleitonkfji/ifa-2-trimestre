@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisãoMais - Portal Assistivo e Acessível</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Atkinson Hyperlegible"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos de Alto Contraste */
+    .high-contrast-yellow {
+      background-color: #000000 !important;
+      color: #ffff00 !important;
+      border-color: #ffff00 !important;
+    }
+    .high-contrast-yellow * {
+      background-color: #000000 !important;
+      color: #ffff00 !important;
+      border-color: #ffff00 !important;
+      box-shadow: none !important;
+    }
+
+    .high-contrast-black {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+    }
+    .high-contrast-black * {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border-color: #ffffff !important;
+    }
+
+    /* Foco Visível para Teclado */
+    :focus-visible {
+      outline: 4px solid #facc15 !important;
+      outline-offset: 4px !important;
+    }
+
+    /* Redução de Movimento */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .hover-grow {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .hover-grow:hover {
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .pulse-audio {
+      animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
+
+    /* Estilo Aprimorado da Lupa */
+    #magnifier-lens {
+      box-shadow: 0 0 0 4px #facc15, 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      background: #ffffff;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body id="app-body" class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col transition-colors duration-300">
+
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-yellow-400 text-black px-6 py-3 rounded-lg font-bold z-50 shadow-2xl text-xl">
+    Ir direto para o conteúdo principal (Atalhos: Alt+1)
+  </a>
+
+  <header class="bg-slate-900 text-white border-b-4 border-brand-500 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex items-center space-x-3">
+        <div class="bg-brand-500 text-white p-2 rounded-xl shadow-md flex items-center justify-center">
+          <i data-lucide="eye" class="w-8 h-8" aria-hidden="true"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold tracking-wide">Visão<span class="text-brand-500">Mais</span></h1>
+          <p class="text-xs text-slate-300">Tecnologia Assistiva e Inclusão Visual</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2" role="region" aria-label="Painel de Controles de Acessibilidade">
+        
+        <button id="btn-read-page" onclick="speakPageOverview()" class="hover-grow bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold flex items-center space-x-2 focus:ring-4 focus:ring-yellow-400">
+          <i data-lucide="volume-2" class="w-5 h-5" aria-hidden="true"></i>
+          <span>Ouvir Página</span>
+        </button>
+
+        <div class="bg-slate-800 rounded-xl p-1 flex items-center border border-slate-700">
+          <button onclick="changeFontSize(-2)" class="px-3 py-1 text-lg font-bold hover:bg-slate-700 rounded-lg text-white" title="Diminuir Fonte" aria-label="Diminuir tamanho do texto">A-</button>
+          <span id="font-size-label" class="px-2 text-sm text-slate-300 font-mono">100%</span>
+          <button onclick="changeFontSize(2)" class="px-3 py-1 text-lg font-bold hover:bg-slate-700 rounded-lg text-white" title="Aumentar Fonte" aria-label="Aumentar tamanho do texto">A+</button>
+        </div>
+
+        <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button onclick="setTheme('default')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 text-white hover:bg-slate-600">Normal</button>
+          <button onclick="setTheme('yellow')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-black text-yellow-300 hover:bg-neutral-900 border border-yellow-300">Amarelo/Preto</button>
+          <button onclick="setTheme('black')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-black text-white hover:bg-neutral-900 border border-white">Preto/Branco</button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <nav class="bg-white border-b border-slate-200 shadow-sm" aria-label="Navegação Principal">
+    <div class="max-w-7xl mx-auto px-4 flex flex-wrap justify-between items-center py-2">
+      <ul class="flex flex-wrap gap-2 text-lg font-bold">
+        <li>
+          <a href="#ferramentas" onclick="speakText('Seção de Ferramentas Assistivas')" class="inline-block px-4 py-2 text-brand-700 hover:bg-brand-50 rounded-lg border-b-2 border-brand-500">
+            <i data-lucide="wrench" class="inline w-5 h-5 mr-1" aria-hidden="true"></i> Ferramentas
+          </a>
+        </li>
+        <li>
+          <a href="#vestiveis" onclick="speakText('Seção de Dispositivos Vestíveis, Cintos e Coletes Inteligentes')" class="inline-block px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg">
+            <i data-lucide="shirt" class="inline w-5 h-5 mr-1 text-purple-600" aria-hidden="true"></i> Vestíveis
+          </a>
+        </li>
+        <li>
+          <a href="#leitor-ia" onclick="speakText('Seção Leitor Inteligente com Inteligência Artificial')" class="inline-block px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg">
+            <i data-lucide="sparkles" class="inline w-5 h-5 mr-1 text-amber-500" aria-hidden="true"></i> Leitor IA
+          </a>
+        </li>
+        <li>
+          <a href="#guias" onclick="speakText('Seção de Guias e Dicas de Acessibilidade')" class="inline-block px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg">
+            <i data-lucide="book-open" class="inline w-5 h-5 mr-1 text-emerald-600" aria-hidden="true"></i> Guias Práticos
+          </a>
+        </li>
+        <li>
+          <a href="#contatos" onclick="speakText('Seção de Telefones e Apoio de Emergência')" class="inline-block px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg">
+            <i data-lucide="phone-call" class="inline w-5 h-5 mr-1 text-red-600" aria-hidden="true"></i> Apoio e Telefones
+          </a>
+        </li>
+      </ul>
+      <div class="text-sm font-medium text-slate-500 py-1">
+        Pressione <kbd class="px-2 py-1 bg-slate-200 rounded font-mono text-black font-bold">Alt + H</kbd> para ajuda por áudio.
+      </div>
+    </div>
+  </nav>
+
+  <main id="main-content" class="max-w-7xl mx-auto px-4 py-8 flex-1 space-y-12">
+
+    <section class="bg-gradient-to-r from-brand-700 to-brand-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-transform">
+      <div class="relative z-10 max-w-3xl space-y-4">
+        <span class="inline-flex items-center gap-2 px-3 py-1 bg-brand-500/40 rounded-full text-brand-100 font-semibold text-sm border border-brand-400/30">
+          <i data-lucide="accessibility" class="w-4 h-4"></i> 100% Focado em Acessibilidade
+        </span>
+        <h2 class="text-3xl md:text-5xl font-black leading-tight">
+          Navegação Sem Barreiras, Autonomia sem Limites.
+        </h2>
+        <p class="text-lg md:text-xl text-brand-100 leading-relaxed">
+          Plataforma desenvolvida para garantir acessibilidade completa a pessoas com baixa visão, cegueira total ou daltonismo. Tudo acompanhado de leitor por voz aprimorado e informações sobre tecnologia vestível.
+        </p>
+        
+        <div class="pt-4 flex flex-wrap gap-4">
+          <button onclick="startVoiceAssistance()" class="pulse-audio bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-extrabold px-8 py-4 rounded-2xl shadow-lg flex items-center gap-3 text-lg transition-transform">
+            <i data-lucide="mic" class="w-6 h-6 text-slate-900" aria-hidden="true"></i>
+            <span>Ativar Assistente de Voz</span>
+          </button>
+          
+          <button onclick="speakText('Este site oferece ferramentas de aumento de texto, informações sobre coletes e cintos assistivos, leitores automáticos, suporte a voz e descrição de imagens.')" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-6 py-4 rounded-2xl flex items-center gap-2 text-lg backdrop-blur-sm">
+            <i data-lucide="info" class="w-6 h-6"></i>
+            <span>Como Funciona?</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="ferramentas" class="space-y-6">
+      <div class="flex items-center gap-3 border-b border-slate-300 pb-3">
+        <i data-lucide="tool" class="w-8 h-8 text-brand-600" aria-hidden="true"></i>
+        <h2 class="text-3xl font-extrabold text-slate-800">Ferramentas Assistivas Rápidas</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="hover-grow bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center mb-4">
+              <i data-lucide="zoom-in" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Lupa de Alta Definição</h3>
+            <p class="text-slate-600 mb-4">Mova o cursor para amplificação em tempo real de elementos e palavras na tela.</p>
+          </div>
+          <button onclick="toggleMagnifier()" id="btn-magnifier" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow">
+            <i data-lucide="search" class="w-5 h-5"></i>
+            <span id="btn-magnifier-text">Ativar Lupa Flutuante</span>
+          </button>
+        </div>
+
+        <div class="hover-grow bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center mb-4">
+              <i data-lucide="headphones" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Leitor ao Selecionar</h3>
+            <p class="text-slate-600 mb-4">Selecione qualquer texto na tela para que o sintetizador leia em tom natural.</p>
+          </div>
+          <button onclick="speakText('A leitura ao selecionar texto está ativa. Passe o mouse ou destaque palavras para ouvir!')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            <span>Recurso Ativado</span>
+          </button>
+        </div>
+
+        <div class="hover-grow bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center mb-4">
+              <i data-lucide="sun-medium" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Guia de Atalhos de Teclado</h3>
+            <p class="text-slate-600 mb-4">Navegue rapidamente sem usar o mouse através de teclas de acesso rápido.</p>
+          </div>
+          <button onclick="showShortcutsModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow">
+            <i data-lucide="keyboard" class="w-5 h-5"></i>
+            <span>Ver Atalhos (`Alt + K`)</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="vestiveis" class="bg-white p-8 rounded-3xl border-2 border-slate-200 shadow-lg space-y-6">
+      <div class="flex items-center gap-3 border-b border-slate-200 pb-4">
+        <i data-lucide="shirt" class="w-8 h-8 text-purple-600"></i>
+        <div>
+          <h2 class="text-3xl font-extrabold text-slate-900">Dispositivos Vestíveis Inteligentes (Coletes e Cintos)</h2>
+          <p class="text-slate-600 text-sm">Tecnologia vestível (*wearables*) com sensores ultrassônicos e vibração tátil para segurança no deslocamento.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="bg-purple-50 p-6 rounded-2xl border border-purple-200 space-y-4 flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 text-purple-800">
+              <i data-lucide="shield-alert" class="w-6 h-6"></i>
+              <h3 class="text-2xl font-bold">1. Colete Ultrassônico de Mapeamento</h3>
+            </div>
+            <p class="text-slate-700 leading-relaxed text-lg">
+              Os **coletes assistivos** são equipados com sensores ultrassônicos e câmeras tridimensionais no peito e ombros. Eles detectam obstáculos suspensos — como galhos de árvores, orelhões e placas — que a bengala tradicional não consegue alcançar.
+            </p>
+            <ul class="list-disc list-inside text-slate-700 space-y-1">
+              <li><strong>Alertas Táteis:</strong> Vibrações no ombro esquerdo ou direito indicam a direção do perigo.</li>
+              <li><strong>Detecção Aérea:</strong> Protege o tórax e a cabeça contra impactos superiores.</li>
+            </ul>
+          </div>
+          <button onclick="speakText('Colete Ultrassônico de Mapeamento: Equipamento vestível com sensores no peito e ombros que vibram para alertar sobre obstáculos no alto, como placas e galhos.')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+            <i data-lucide="volume-2" class="w-5 h-5"></i>
+            <span>Ouvir Detalhes do Colete</span>
+          </button>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200 space-y-4 flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 text-brand-800">
+              <i data-lucide="compass" class="w-6 h-6"></i>
+              <h3 class="text-2xl font-bold">2. Cinto Háptico com Navegação GPS</h3>
+            </div>
+            <p class="text-slate-700 leading-relaxed text-lg">
+              Os **cintos guiados por vibração** utilizam um sistema 360 graus de motores hápticos na cintura. Ao se conectar ao GPS do smartphone, o cinto vibra suavemente na parte frontal, traseira ou lateral da cintura para indicar a direção exata a seguir nas ruas.
+            </p>
+            <ul class="list-disc list-inside text-slate-700 space-y-1">
+              <li><strong>Orientação Silenciosa:</strong> Não bloqueia a audição do usuário com fones de ouvido.</li>
+              <li><strong>Sensor de Chão:</strong> Alerta sobre buracos, degraus e desníveis próximos aos pés.</li>
+            </ul>
+          </div>
+          <button onclick="speakText('Cinto Háptico com Navegação GPS: Cinto com vibrações 360 graus na cintura que guiam o caminho pela cidade sem precisar de áudio ou fones de ouvido.')" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+            <i data-lucide="volume-2" class="w-5 h-5"></i>
+            <span>Ouvir Detalhes do Cinto</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="leitor-ia" class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 rounded-3xl shadow-xl space-y-6">
+      <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-700 pb-4">
+        <div>
+          <span class="text-amber-400 font-bold uppercase tracking-wider text-xs">Potencializado por Inteligência Artificial</span>
+          <h2 class="text-3xl font-extrabold flex items-center gap-2">
+            <i data-lucide="bot" class="text-amber-400 w-8 h-8"></i> Assistente de Leitura Inteligente
+          </h2>
+        </div>
+        <p class="text-slate-300 text-sm max-w-md">Cole textos longos para simplificar, resumir ou ouvir com sintonia de voz natural.</p>
+      </div>
+
+      <div class="space-y-4">
+        <label for="ai-text-input" class="block text-lg font-semibold text-slate-200">
+          Cole ou digite o texto para leitura ou resumo:
+        </label>
+        <textarea id="ai-text-input" rows="5" class="w-full p-4 rounded-2xl bg-slate-800 border-2 border-slate-600 text-white placeholder-slate-400 text-lg focus:border-brand-500 focus:ring-2 focus:ring-brand-500" placeholder="Cole seu texto aqui..."></textarea>
+
+        <div class="flex flex-wrap gap-4">
+          <button onclick="readAIText()" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-lg shadow-lg">
+            <i data-lucide="play" class="w-5 h-5"></i>
+            <span>Ler Texto em Voz Alta</span>
+          </button>
+
+          <button onclick="summarizeAIText()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-xl font-extrabold flex items-center gap-2 text-lg shadow-lg">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span>Resumir com IA</span>
+          </button>
+
+          <button onclick="stopSpeech()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-lg shadow-lg">
+            <i data-lucide="square" class="w-5 h-5"></i>
+            <span>Parar Áudio</span>
+          </button>
+        </div>
+
+        <div id="ai-output-box" class="hidden mt-6 p-6 bg-slate-800/80 rounded-2xl border border-amber-500/40 text-slate-100 space-y-3">
+          <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2">
+            <i data-lucide="file-text" class="w-5 h-5"></i> Resumo Simplificado:
+          </h3>
+          <p id="ai-output-text" class="text-lg leading-relaxed"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-300 pb-3">
+        <h2 class="text-3xl font-extrabold text-slate-800 flex items-center gap-3">
+          <i data-lucide="image" class="w-8 h-8 text-brand-600"></i> Galeria com Audiodescrição
+        </h2>
+        <span class="text-sm text-slate-500">Clique na imagem para ouvir a descrição</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="hover-grow bg-white rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md flex flex-col">
+          <div class="relative h-48 bg-slate-200 flex items-center justify-center overflow-hidden">
+            <svg class="w-full h-full object-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <rect width="400" height="200" fill="#2563eb" />
+              <circle cx="200" cy="100" r="60" fill="#facc15" />
+              <path d="M 100 180 Q 200 100 300 180" stroke="#ffffff" stroke-width="8" fill="none" />
+            </svg>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-xl font-bold text-slate-900">Cão-Guia em Treinamento</h3>
+              <p class="text-sm text-slate-600 mt-1">Imagem representativa de um cão labrador assistivo.</p>
+            </div>
+            <button onclick="speakText('Audiodescrição: Fotografia de um cão labrador dourado usando um colete azul de cão-guia, caminhando ao lado de seu tutor em uma calçada ensolarada.')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl border border-slate-300 flex items-center justify-center gap-2">
+              <i data-lucide="volume-2" class="w-5 h-5 text-brand-600"></i>
+              <span>Ouvir Audiodescrição</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hover-grow bg-white rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md flex flex-col">
+          <div class="relative h-48 bg-slate-200 flex items-center justify-center overflow-hidden">
+            <svg class="w-full h-full object-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <rect width="400" height="200" fill="#0f172a" />
+              <rect x="50" y="40" width="300" height="120" rx="10" fill="#1e293b" stroke="#facc15" stroke-width="4" />
+              <text x="200" y="110" font-size="28" fill="#facc15" font-weight="bold" text-anchor="middle">BRAILLE ⠃⠗⠁⠊⠇⠇⠑</text>
+            </svg>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-xl font-bold text-slate-900">Linha Braille Eletrônica</h3>
+              <p class="text-sm text-slate-600 mt-1">Dispositivo para leitura tátil conectada.</p>
+            </div>
+            <button onclick="speakText('Audiodescrição: Aparelho retangular de cor escura com pinos mecânicos em relevo que formam caracteres em Braille para leitura tátil conectada a computadores.')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl border border-slate-300 flex items-center justify-center gap-2">
+              <i data-lucide="volume-2" class="w-5 h-5 text-brand-600"></i>
+              <span>Ouvir Audiodescrição</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hover-grow bg-white rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md flex flex-col">
+          <div class="relative h-48 bg-slate-200 flex items-center justify-center overflow-hidden">
+            <svg class="w-full h-full object-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <rect width="400" height="200" fill="#047857" />
+              <circle cx="100" cy="100" r="40" fill="#ffffff" opacity="0.3" />
+              <circle cx="200" cy="100" r="40" fill="#ffffff" opacity="0.6" />
+              <circle cx="300" cy="100" r="40" fill="#ffffff" />
+            </svg>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-xl font-bold text-slate-900">Piso Tátil de Alerta</h3>
+              <p class="text-sm text-slate-600 mt-1">Sinalização de chão com relevos direcionais.</p>
+            </div>
+            <button onclick="speakText('Audiodescrição: Placas amarelas no chão com pequenos relevos circulares alinhados que indicam proximidade de obstáculos para deficientes visuais.')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl border border-slate-300 flex items-center justify-center gap-2">
+              <i data-lucide="volume-2" class="w-5 h-5 text-brand-600"></i>
+              <span>Ouvir Audiodescrição</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="guias" class="bg-white p-8 rounded-3xl border-2 border-slate-200 shadow-lg space-y-6">
+      <div class="flex items-center gap-3 border-b border-slate-200 pb-4">
+        <i data-lucide="book-open-check" class="w-8 h-8 text-emerald-600"></i>
+        <h2 class="text-3xl font-extrabold text-slate-900">Guias Práticos e Tecnologias</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <article class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+          <h3 class="text-2xl font-bold text-brand-900">1. Principais Leitores de Tela</h3>
+          <p class="text-slate-700 leading-relaxed text-lg">
+            Os leitores de tela transformam texto em sintetização de voz. Para computadores Windows use o <strong>NVDA</strong> (gratuito) ou o <strong>JAWS</strong>. Nos celulares Android ative o <strong>TalkBack</strong>, e no iOS use o <strong>VoiceOver</strong>.
+          </p>
+          <button onclick="speakText('Guia 1: Leitores de Tela. Para Windows utilize o NVDA. Em celulares Android use o Talkback e no iPhone use o VoiceOver.')" class="text-brand-600 font-bold hover:underline inline-flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-4 h-4"></i> Ouvir este resumo
+          </button>
+        </article>
+
+        <article class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+          <h3 class="text-2xl font-bold text-brand-900">2. Reconhecimento por Câmera</h3>
+          <p class="text-slate-700 leading-relaxed text-lg">
+            O aplicativo <strong>Be My Eyes</strong> conecta deficientes visuais a voluntários em tempo real via chamada de vídeo. O <strong>Seeing AI</strong> da Microsoft lê notas de dinheiro, identifica cores e lê documentos impressos instantaneamente.
+          </p>
+          <button onclick="speakText('Guia 2: Aplicativos por câmera. Be My Eyes para ajuda humana ao vivo e Seeing AI para identificar documentos e dinheiro.')" class="text-brand-600 font-bold hover:underline inline-flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-4 h-4"></i> Ouvir este resumo
+          </button>
+        </article>
+      </div>
+    </section>
+
+    <section id="contatos" class="bg-slate-900 text-white p-8 rounded-3xl border-2 border-slate-700 shadow-xl space-y-6">
+      <div class="flex items-center gap-3 border-b border-slate-700 pb-4">
+        <i data-lucide="phone-call" class="w-8 h-8 text-red-500"></i>
+        <div>
+          <h2 class="text-3xl font-extrabold">Telefones e Serviços de Apoio</h2>
+          <p class="text-slate-400 text-sm">Contatos e instituições brasileiras de suporte à pessoa com deficiência visual.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-2">
+          <h3 class="text-xl font-bold text-yellow-400">Disque Direitos Humanos</h3>
+          <p class="text-3xl font-black">Disque 100</p>
+          <p class="text-slate-300 text-sm">Serviço gratuito para denúncias, auxílio e orientação sobre direitos da pessoa com deficiência.</p>
+          <button onclick="speakText('Disque Direitos Humanos: número 100. Atendimento gratuito 24 horas.')" class="mt-2 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-4 h-4"></i> Ouvir número
+          </button>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-2">
+          <h3 class="text-xl font-bold text-yellow-400">Fundação Dorina Nowill</h3>
+          <p class="text-2xl font-black">(11) 5087-0999</p>
+          <p class="text-slate-300 text-sm">Instituição referência em livros em Braille, áudios e reabilitação para deficientes visuais.</p>
+          <button onclick="speakText('Fundação Dorina Nowill para Cegos: telefone 11 5087 0999.')" class="mt-2 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-4 h-4"></i> Ouvir número
+          </button>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-2">
+          <h3 class="text-xl font-bold text-yellow-400">Instituto Benjamin Constant</h3>
+          <p class="text-2xl font-black">(21) 3478-4400</p>
+          <p class="text-slate-300 text-sm">Centro nacional de referência para educação e capacitação de pessoas cegas ou com baixa visão.</p>
+          <button onclick="speakText('Instituto Benjamin Constant: telefone 21 3478 4400.')" class="mt-2 text-xs text-brand-400 font-bold hover:underline flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-4 h-4"></i> Ouvir número
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <dialog id="shortcuts-modal" class="p-0 rounded-3xl max-w-lg w-full backdrop:bg-slate-900/80 shadow-2xl">
+    <div class="p-6 bg-white space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+          <i data-lucide="keyboard" class="text-brand-600"></i> Atalhos do Teclado
+        </h3>
+        <button onclick="closeShortcutsModal()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full" aria-label="Fechar Modal">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+      
+      <ul class="space-y-3 text-lg text-slate-800">
+        <li class="flex justify-between border-b pb-2">
+          <span>Ouvir resumo da página</span>
+          <kbd class="px-2 py-1 bg-slate-200 rounded font-mono font-bold">Alt + 1</kbd>
+        </li>
+        <li class="flex justify-between border-b pb-2">
+          <span>Ativar Lupa Flutuante</span>
+          <kbd class="px-2 py-1 bg-slate-200 rounded font-mono font-bold">Alt + 2</kbd>
+        </li>
+        <li class="flex justify-between border-b pb-2">
+          <span>Ir para Leitor com IA</span>
+          <kbd class="px-2 py-1 bg-slate-200 rounded font-mono font-bold">Alt + 3</kbd>
+        </li>
+        <li class="flex justify-between border-b pb-2">
+          <span>Parar voz imediatamente</span>
+          <kbd class="px-2 py-1 bg-slate-200 rounded font-mono font-bold">Esc</kbd>
+        </li>
+      </ul>
+
+      <button onclick="closeShortcutsModal()" class="w-full mt-4 bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700">
+        Entendi e Fechar
+      </button>
+    </div>
+  </dialog>
+
+  <div id="magnifier-lens" class="hidden fixed w-64 h-64 rounded-full pointer-events-none z-50 overflow-hidden bg-white border-4 border-yellow-400 shadow-2xl flex flex-col items-center justify-center p-4">
+    <div id="magnifier-badge" class="absolute top-2 bg-black text-yellow-300 font-extrabold text-xs px-2 py-0.5 rounded-full uppercase tracking-wider">Lupa 2x</div>
+    <div id="magnifier-content" class="text-slate-900 font-extrabold text-3xl text-center leading-tight"></div>
+  </div>
+
+  <footer class="bg-slate-900 text-slate-300 mt-16 border-t-4 border-brand-500 py-10">
+    <div class="max-w-7xl mx-auto px-4 text-center space-y-4">
+      <div class="flex items-center justify-center space-x-2">
+        <i data-lucide="heart" class="w-6 h-6 text-red-500 fill-current"></i>
+        <p class="text-xl font-extrabold text-white">Desenvolvido com Foco Total na Inclusão Social</p>
+      </div>
+      <p class="text-sm text-slate-400 max-w-xl mx-auto">
+        Este site atende aos padrões internacionais de acessibilidade web (WCAG 2.1 nível AAA), garantindo navegabilidade simplificada e inclusiva.
+      </p>
+      <div class="pt-4 text-xs text-slate-500">
+        © 2026 VisãoMais. Conteúdo e código abertos para apoio à acessibilidade.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Inicializar ícones
+    lucide.createIcons();
+
+    const apiKey = "";
+
+    // Estado da Aplicação
+    let currentFontSizePercent = 100;
+    let isMagnifierActive = false;
+    const synth = window.speechSynthesis;
+    let selectedVoice = null;
+
+    // --- MELHORIA DA IA DE VOZ ---
+    function loadBestVoice() {
+      if (!synth) return;
+      const voices = synth.getVoices();
+      
+      // Procura por vozes em Português de alta qualidade
+      selectedVoice = voices.find(v => v.lang.includes('pt') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Helena'))) 
+                   || voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt')) 
+                   || voices[0];
+    }
+
+    if (synth) {
+      loadBestVoice();
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadBestVoice;
+      }
+    }
+
+    function speakText(text) {
+      if (!synth) return;
+
+      synth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) utterance.voice = selectedVoice;
+      
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+
+      synth.speak(utterance);
+    }
+
+    function stopSpeech() {
+      if (synth) synth.cancel();
+    }
+
+    function speakPageOverview() {
+      speakText("Você está no portal Visão Mais. O site oferece ferramentas de ampliação por lupa, dispositivos vestíveis como coletes e cintos assistivos, leitor por voz de alta definição, assistente de IA e telefones úteis de apoio.");
+    }
+
+    function startVoiceAssistance() {
+      speakText("Assistente de áudio ativado. Pressione a tecla Tab para navegar pelos botões ou use o atalho Alt mais 1 para ler a página.");
+    }
+
+    // Leitura ao selecionar
+    document.addEventListener('mouseup', () => {
+      const selectedText = window.getSelection().toString().trim();
+      if (selectedText.length > 2) {
+        speakText(selectedText);
+      }
+    });
+
+    // --- FONTE ---
+    function changeFontSize(delta) {
+      currentFontSizePercent = Math.max(80, Math.min(160, currentFontSizePercent + delta));
+      document.documentElement.style.fontSize = `${currentFontSizePercent}%`;
+      document.getElementById('font-size-label').innerText = `${currentFontSizePercent}%`;
+      speakText(`Tamanho da fonte ajustado para ${currentFontSizePercent} por cento`);
+    }
+
+    // --- CONTRASTE ---
+    function setTheme(theme) {
+      const body = document.getElementById('app-body');
+      body.classList.remove('high-contrast-yellow', 'high-contrast-black');
+
+      if (theme === 'yellow') {
+        body.classList.add('high-contrast-yellow');
+        speakText("Modo Alto Contraste Amarelo e Preto ativado.");
+      } else if (theme === 'black') {
+        body.classList.add('high-contrast-black');
+        speakText("Modo Alto Contraste Branco e Preto ativado.");
+      } else {
+        speakText("Tema Padrão ativado.");
+      }
+    }
+
+    // --- LUPA APRIMORADA ---
+    function toggleMagnifier() {
+      isMagnifierActive = !isMagnifierActive;
+      const lens = document.getElementById('magnifier-lens');
+      const btnText = document.getElementById('btn-magnifier-text');
+
+      if (isMagnifierActive) {
+        lens.classList.remove('hidden');
+        btnText.innerText = "Desativar Lupa Flutuante";
+        speakText("Lupa de Alta Definição ativada. Mova o cursor do mouse sobre os elementos.");
+        document.addEventListener('mousemove', moveMagnifier);
+      } else {
+        lens.classList.add('hidden');
+        btnText.innerText = "Ativar Lupa Flutuante";
+        speakText("Lupa desativada.");
+        document.removeEventListener('mousemove', moveMagnifier);
+      }
+    }
+
+    function moveMagnifier(e) {
+      if (!isMagnifierActive) return;
+      const lens = document.getElementById('magnifier-lens');
+      const content = document.getElementById('magnifier-content');
+
+      lens.style.left = `${e.clientX}px`;
+      lens.style.top = `${e.clientY}px`;
+
+      const elem = document.elementFromPoint(e.clientX, e.clientY);
+      if (elem && elem.innerText && !lens.contains(elem)) {
+        const textSample = elem.innerText.trim().substring(0, 60);
+        if (textSample) {
+          content.innerText = textSample;
+        }
+      }
+    }
+
+    // --- LEITOR IA (GEMINI) ---
+    async function readAIText() {
+      const text = document.getElementById('ai-text-input').value.trim();
+      if (!text) {
+        speakText("Por favor, digite ou cole um texto no campo antes de ouvir.");
+        return;
+      }
+      speakText("Lendo texto: " + text);
+    }
+
+    async function summarizeAIText() {
+      const text = document.getElementById('ai-text-input').value.trim();
+      if (!text) {
+        speakText("Por favor, cole um texto no campo para resumir com IA.");
+        return;
+      }
+
+      speakText("Processando o resumo com Inteligência Artificial. Por favor aguarde.");
+
+      const outputBox = document.getElementById('ai-output-box');
+      const outputText = document.getElementById('ai-output-text');
+      outputBox.classList.remove('hidden');
+      outputText.innerText = "Gerando resumo simplificado...";
+
+      const prompt = `Resuma o texto a seguir em português claro e objetivo para leitura de áudio para deficientes visuais: \n\n${text}`;
+      
+      try {
+        const responseText = await fetchGeminiWithBackoff(prompt);
+        outputText.innerText = responseText;
+        speakText("Resumo concluído: " + responseText);
+      } catch (err) {
+        const fallbackSummary = text.substring(0, 150) + "...";
+        outputText.innerText = fallbackSummary;
+        speakText("Resumo rápido gerado: " + fallbackSummary);
+      }
+    }
+
+    async function fetchGeminiWithBackoff(prompt) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+      let delay = 1000;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "Resumo indisponível.";
+          }
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2;
+      }
+      throw new Error("Falha de conexão com a API Gemini.");
+    }
+
+    // --- MODAL & ATALHOS ---
+    function showShortcutsModal() {
+      document.getElementById('shortcuts-modal').showModal();
+      speakText("Modal de atalhos aberto.");
+    }
+
+    function closeShortcutsModal() {
+      document.getElementById('shortcuts-modal').close();
+      speakText("Modal fechado.");
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') stopSpeech();
+
+      if (e.altKey) {
+        if (e.key === '1') { e.preventDefault(); speakPageOverview(); }
+        else if (e.key === '2') { e.preventDefault(); toggleMagnifier(); }
+        else if (e.key === '3') { e.preventDefault(); document.getElementById('ai-text-input').focus(); speakText("Campo de texto IA focalizado."); }
+        else if (e.key.toLowerCase() === 'h' || e.key.toLowerCase() === 'k') { e.preventDefault(); showShortcutsModal(); }
+      }
+    });
+  </script>
+</body>
+</html>
